@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>周末聚会 · 分账核对</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#fbf3ea;          /* FT 奶油底 */
+    --paper-2:#fff;
+    --ink:#231f20;
+    --ink-soft:#5c5550;
+    --rule:#e3d6c6;
+    --rule-strong:#cdbba6;
+    --accent:#c0392b;          /* 朱砂红 · 收 */
+    --pay:#9a5b2c;             /* 付 · 棕 */
+    --recv:#1f6b3b;            /* 收 · 绿 */
+    --chip:#f1e6d8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--paper);color:var(--ink);
+    font-family:"Noto Sans SC",system-ui,sans-serif;
+    text-wrap:pretty;-webkit-font-smoothing:antialiased;line-height:1.5}
+  .wrap{max-width:680px;margin:0 auto;padding:22px 16px 60px}
+
+  /* 报头 */
+  .masthead{border-bottom:3px double var(--rule-strong);padding-bottom:14px;margin-bottom:18px}
+  .kicker{font-size:12px;letter-spacing:.22em;color:var(--accent);font-weight:700;text-transform:uppercase}
+  h1{font-family:"Noto Serif SC",serif;font-weight:700;font-size:30px;line-height:1.15;margin:6px 0 8px}
+  .sub{font-size:13.5px;color:var(--ink-soft)}
+  .sub b{color:var(--ink);font-weight:600}
+
+  /* 结论卡 */
+  .verdict{background:var(--paper-2);border:1px solid var(--rule-strong);
+    border-radius:4px;padding:16px 16px 6px;margin:18px 0 26px;
+    box-shadow:0 1px 0 rgba(0,0,0,.03)}
+  .verdict h2{font-family:"Noto Serif SC",serif;font-size:16px;margin-bottom:4px}
+  .verdict .note{font-size:12.5px;color:var(--ink-soft);margin-bottom:12px}
+  .collect-row{display:flex;justify-content:space-between;align-items:baseline;
+    padding:10px 2px;border-top:1px solid var(--rule)}
+  .collect-row:first-of-type{border-top:none}
+  .cr-name{font-size:15px;font-weight:600}
+  .cr-name span{font-size:12px;color:var(--ink-soft);font-weight:400;margin-left:4px}
+  .cr-amt{font-family:"Noto Serif SC",serif;font-size:18px;font-weight:600}
+  .pay{color:var(--pay)} .recv{color:var(--recv)}
+  .hero{display:flex;justify-content:space-between;align-items:baseline;
+    margin-top:6px;padding:12px 2px 4px;border-top:2px solid var(--ink)}
+  .hero .l{font-size:14px;font-weight:700}
+  .hero .r{font-family:"Noto Serif SC",serif;font-size:24px;font-weight:700;color:var(--recv)}
+
+  /* 区块标题 */
+  .sec-h{font-family:"Noto Serif SC",serif;font-size:18px;font-weight:600;
+    margin:30px 0 4px;display:flex;align-items:center;gap:10px}
+  .sec-h::after{content:"";flex:1;height:1px;background:var(--rule-strong)}
+  .sec-d{font-size:12.5px;color:var(--ink-soft);margin-bottom:14px}
+
+  /* 项目折叠 */
+  .item{border-bottom:1px solid var(--rule)}
+  .item-bar{width:100%;background:none;border:none;cursor:pointer;
+    display:flex;align-items:center;gap:10px;padding:13px 2px;text-align:left;
+    font-family:inherit;color:inherit}
+  .item-bar:hover{background:rgba(192,57,43,.03)}
+  .tw{font-family:"Noto Serif SC",serif;font-weight:600;font-size:15px;flex:1}
+  .tw small{display:block;font-family:"Noto Sans SC";font-weight:400;font-size:11.5px;color:var(--ink-soft);margin-top:1px}
+  .titem-amt{font-family:"Noto Serif SC",serif;font-weight:600;font-size:15px}
+  .caret{width:9px;height:9px;border-right:1.6px solid var(--ink-soft);
+    border-bottom:1.6px solid var(--ink-soft);transform:rotate(45deg);
+    transition:transform .18s;flex:none}
+  .item.open .caret{transform:rotate(-135deg)}
+  .body{display:none;padding:2px 2px 16px}
+  .item.open .body{display:block}
+  .calc{font-size:12.5px;color:var(--ink-soft);background:var(--chip);
+    border-radius:3px;padding:8px 10px;margin-bottom:10px;
+    font-feature-settings:"tnum"}
+  .calc b{color:var(--ink)}
+  .split{width:100%;border-collapse:collapse;font-size:13px}
+  .split td{padding:6px 4px;border-bottom:1px solid var(--rule)}
+  .split tr:last-child td{border-bottom:none}
+  .split .f{font-weight:500}
+  .split .h{color:var(--ink-soft);font-size:12px}
+  .split .v{text-align:right;font-family:"Noto Serif SC",serif;font-feature-settings:"tnum"}
+  .payer{font-size:12px;color:var(--accent);margin-top:9px;font-weight:500}
+
+  /* 汇总表 */
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;
+    border:1px solid var(--rule-strong);border-radius:4px;background:var(--paper-2)}
+  table.grid{border-collapse:collapse;width:100%;min-width:560px;font-size:12.5px;
+    font-feature-settings:"tnum"}
+  table.grid th,table.grid td{padding:9px 8px;text-align:right;white-space:nowrap;
+    border-bottom:1px solid var(--rule)}
+  table.grid th{background:var(--chip);font-weight:600;font-size:12px;
+    position:sticky;top:0}
+  table.grid th:first-child,table.grid td:first-child{text-align:left;font-weight:500}
+  table.grid td.num{font-family:"Noto Serif SC",serif}
+  table.grid tr.tot td{border-top:2px solid var(--ink);border-bottom:none;
+    font-weight:700;background:var(--chip)}
+  .dash{color:var(--rule-strong)}
+  .net-pay{color:var(--pay);font-weight:700}
+  .net-recv{color:var(--recv);font-weight:700}
+
+  /* 垫付 + 校验 */
+  .paid-list{list-style:none}
+  .paid-list li{display:flex;justify-content:space-between;padding:9px 2px;
+    border-bottom:1px solid var(--rule);font-size:13.5px}
+  .paid-list .who{font-weight:500}
+  .paid-list .who small{color:var(--ink-soft);font-weight:400;margin-left:6px}
+  .paid-list .amt{font-family:"Noto Serif SC",serif;font-weight:600;font-feature-settings:"tnum"}
+  .check{background:var(--paper-2);border:1px solid var(--rule-strong);border-radius:4px;
+    padding:14px 16px;margin-top:14px;font-size:13px}
+  .check .ln{display:flex;justify-content:space-between;padding:5px 0;color:var(--ink-soft)}
+  .check .ln b{color:var(--ink);font-family:"Noto Serif SC",serif;font-feature-settings:"tnum"}
+  .ok{display:inline-flex;align-items:center;gap:6px;color:var(--recv);font-weight:600;margin-top:8px;font-size:13px}
+  .ok::before{content:"✓";display:inline-grid;place-items:center;width:18px;height:18px;
+    border-radius:50%;background:var(--recv);color:#fff;font-size:11px}
+
+  .foot{margin-top:28px;padding-top:14px;border-top:1px solid var(--rule);
+    font-size:11.5px;color:var(--ink-soft);line-height:1.7}
+  .foot b{color:var(--ink)}
+  .toggle-all{background:none;border:1px solid var(--rule-strong);border-radius:3px;
+    padding:5px 12px;font-size:12px;color:var(--ink-soft);cursor:pointer;
+    font-family:inherit;margin-bottom:10px}
+  .toggle-all:hover{background:var(--chip)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="kicker">周末聚会 · 分账核对</div>
+    <h1>这趟一共花了多少，谁该收谁该付</h1>
+    <div class="sub">5 个项目合计 <b id="grand"></b> 元 · 按各家实际人数摊分 · 阿娜归入<b>张</b>家</div>
+  </div>
+
+  <!-- 结论 -->
+  <div class="verdict">
+    <h2>最终结算</h2>
+    <div class="note">所有垫付已抵扣，只需各家把下面金额转给段（你）即可</div>
+    <div id="settle"></div>
+  </div>
+
+  <!-- 分项明细 -->
+  <div class="sec-h">分项明细</div>
+  <div class="sec-d">点任意一项展开：看「总额 ÷ 总人数 = 单价」，再乘各家人数。数字都是这页现场算的。</div>
+  <button class="toggle-all" id="toggleAll">全部展开</button>
+  <div id="items"></div>
+
+  <!-- 汇总表 -->
+  <div class="sec-h">各家应摊汇总</div>
+  <div class="sec-d">横向可滑动。最后两列：已垫付的钱、以及最终应收(绿)／应付(棕)。</div>
+  <div class="scroll">
+    <table class="grid" id="gridTable"></table>
+  </div>
+
+  <!-- 垫付 -->
+  <div class="sec-h">谁先垫的钱</div>
+  <ul class="paid-list" id="paidList"></ul>
+
+  <!-- 校验 -->
+  <div class="sec-h">对账校验</div>
+  <div class="check" id="checkBox"></div>
+
+  <div class="foot">
+    <b>两点说明：</b><br>
+    1. 奶茶／咖啡群里没给金额（中午董点的那笔被撤回了），暂未计入。补上数发我重算即可。<br>
+    2. 显示金额四舍五入到「分」，个别行可能有 ±0.01 的视觉误差；合计与收付以账单原值为准，已通过下方校验。
+  </div>
+
+</div>
+
+<script>
+// ===== 原始数据（唯一事实来源，改这里即可重算）=====
+const FAM = ['吴','张','段','厉','黄'];
+const LABEL = {吴:'吴潇俊',张:'张（含阿娜）',段:'段（你）',厉:'厉哲',黄:'黄'};
+
+const EVENTS = [
+  {key:'漂流', total:1440.00, payer:'张', payerNote:'阿娜垫', heads:{吴:2,张:4,段:2,厉:2,黄:2}, rateNote:'120 / 人'},
+  {key:'周六午饭', total:478.00, payer:'吴', payerNote:'', heads:{吴:2,段:2,厉:4}, rateNote:'三家 AA'},
+  {key:'周六晚饭', total:584.32, payer:'厉', payerNote:'', heads:{吴:2,张:4,段:2,厉:4}, rateNote:''},
+  {key:'周六宵夜', total:611.50, payer:'厉', payerNote:'', heads:{吴:2,张:2,段:3,厉:4}, rateNote:''},
+  {key:'住宿', total:5486.00, payer:'段', payerNote:'你垫', heads:{吴:2,张:4,段:3,厉:4}, rateNote:'422 / 人'},
+];
+
+// ===== 计算 =====
+const yuan = n => n.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const owed = {}, paid = {};
+FAM.forEach(f=>{owed[f]=0;paid[f]=0;});
+
+EVENTS.forEach(ev=>{
+  ev.persons = Object.values(ev.heads).reduce((a,b)=>a+b,0);
+  ev.rate = ev.total / ev.persons;
+  ev.share = {};
+  FAM.forEach(f=>{
+    const h = ev.heads[f]||0;
+    const s = h * ev.rate;
+    ev.share[f] = s;
+    owed[f] += s;
+  });
+  paid[ev.payer] += ev.total;
+});
+
+const net = {}; FAM.forEach(f=> net[f] = paid[f] - owed[f]); // +收 -付
+const grand = EVENTS.reduce((a,e)=>a+e.total,0);
+
+// ===== 渲染：报头 =====
+document.getElementById('grand').textContent = yuan(grand);
+
+// ===== 渲染：结算 =====
+(function(){
+  const box = document.getElementById('settle');
+  const payers = FAM.filter(f=>net[f] < -0.005).sort((a,b)=>net[a]-net[b]);
+  const receiver = FAM.find(f=>net[f] > 0.005);
+  let html='';
+  payers.forEach(f=>{
+    html += `<div class="collect-row">
+      <div class="cr-name">${f}<span>${LABEL[f]}</span></div>
+      <div class="cr-amt pay">付 ${yuan(-net[f])}</div></div>`;
+  });
+  let totalIn = payers.reduce((a,f)=>a + (-net[f]),0);
+  html += `<div class="hero"><div class="l">段（你）共收回</div>
+    <div class="r">${yuan(totalIn)}</div></div>`;
+  box.innerHTML = html;
+})();
+
+// ===== 渲染：分项 =====
+(function(){
+  const wrap = document.getElementById('items');
+  EVENTS.forEach((ev,i)=>{
+    const headsStr = FAM.filter(f=>ev.heads[f]).map(f=>`${f}${ev.heads[f]}`).join(' ');
+    let rows='';
+    FAM.filter(f=>ev.heads[f]).forEach(f=>{
+      rows += `<tr><td class="f">${f}</td>
+        <td class="h">${ev.heads[f]} 人 × ${yuan(ev.rate)}</td>
+        <td class="v">${yuan(ev.share[f])}</td></tr>`;
+    });
+    const payerLine = `${ev.payer} 垫付${ev.payerNote?'（'+ev.payerNote+'）':''} ${yuan(ev.total)}`;
+    wrap.insertAdjacentHTML('beforeend', `
+      <div class="item" data-i="${i}">
+        <button class="item-bar">
+          <span class="tw">${ev.key}<small>${headsStr} · 共 ${ev.persons} 人${ev.rateNote?' · '+ev.rateNote:''}</small></span>
+          <span class="titem-amt">${yuan(ev.total)}</span>
+          <span class="caret"></span>
+        </button>
+        <div class="body">
+          <div class="calc"><b>${yuan(ev.total)}</b> ÷ <b>${ev.persons} 人</b> = 每人 <b>${yuan(ev.rate)}</b></div>
+          <table class="split">${rows}</table>
+          <div class="payer">▸ ${payerLine}</div>
+        </div>
+      </div>`);
+  });
+  wrap.querySelectorAll('.item-bar').forEach(b=>{
+    b.addEventListener('click',()=>b.parentElement.classList.toggle('open'));
+  });
+  const tg = document.getElementById('toggleAll');
+  tg.addEventListener('click',()=>{
+    const items=[...wrap.querySelectorAll('.item')];
+    const anyClosed = items.some(it=>!it.classList.contains('open'));
+    items.forEach(it=>it.classList.toggle('open',anyClosed));
+    tg.textContent = anyClosed?'全部收起':'全部展开';
+  });
+})();
+
+// ===== 渲染：汇总表 =====
+(function(){
+  const t = document.getElementById('gridTable');
+  let head = '<tr><th>家庭</th>' + EVENTS.map(e=>`<th>${e.key}</th>`).join('')
+    + '<th>应摊</th><th>已垫</th><th>应收/付</th></tr>';
+  let rows='';
+  FAM.forEach(f=>{
+    let cells = EVENTS.map(e=> e.heads[f]
+        ? `<td class="num">${yuan(e.share[f])}</td>`
+        : `<td class="dash">—</td>`).join('');
+    const paidCell = paid[f]>0 ? `<td class="num">${yuan(paid[f])}</td>` : `<td class="dash">—</td>`;
+    const n = net[f];
+    const netCell = n>0.005
+      ? `<td class="num net-recv">收 ${yuan(n)}</td>`
+      : `<td class="num net-pay">付 ${yuan(-n)}</td>`;
+    rows += `<tr><td>${f}</td>${cells}<td class="num">${yuan(owed[f])}</td>${paidCell}${netCell}</tr>`;
+  });
+  // 合计行
+  let totCells = EVENTS.map(e=>`<td class="num">${yuan(e.total)}</td>`).join('');
+  let totOwed = Object.values(owed).reduce((a,b)=>a+b,0);
+  let totPaid = Object.values(paid).reduce((a,b)=>a+b,0);
+  rows += `<tr class="tot"><td>合计</td>${totCells}<td class="num">${yuan(totOwed)}</td><td class="num">${yuan(totPaid)}</td><td class="dash">—</td></tr>`;
+  t.innerHTML = head + rows;
+})();
+
+// ===== 渲染：垫付 =====
+(function(){
+  const ul = document.getElementById('paidList');
+  EVENTS.forEach(ev=>{
+    ul.insertAdjacentHTML('beforeend',
+      `<li><span class="who">${ev.payer}<small>${ev.key}${ev.payerNote?' · '+ev.payerNote:''}</small></span>
+       <span class="amt">${yuan(ev.total)}</span></li>`);
+  });
+})();
+
+// ===== 渲染：校验 =====
+(function(){
+  const box = document.getElementById('checkBox');
+  const totOwed = Object.values(owed).reduce((a,b)=>a+b,0);
+  const totIn = FAM.filter(f=>net[f]<0).reduce((a,f)=>a-net[f],0);
+  const totOut = FAM.filter(f=>net[f]>0).reduce((a,f)=>a+net[f],0);
+  const okSum = Math.abs(totOwed-grand)<0.01;
+  const okFlow = Math.abs(totIn-totOut)<0.01;
+  box.innerHTML = `
+    <div class="ln"><span>各家应摊合计</span><b>${yuan(totOwed)}</b></div>
+    <div class="ln"><span>账单总额</span><b>${yuan(grand)}</b></div>
+    <div class="ln" style="border-top:1px solid var(--rule);margin-top:4px;padding-top:9px"><span>该付出的钱（合计）</span><b>${yuan(totIn)}</b></div>
+    <div class="ln"><span>段应收回</span><b>${yuan(totOut)}</b></div>
+    ${okSum&&okFlow?'<div class="ok">应摊＝总额，付出＝收回，账目平</div>':'<div style="color:#c0392b">⚠ 数据有出入，请检查</div>'}
+  `;
+})();
+</script>
+</body>
+</html>

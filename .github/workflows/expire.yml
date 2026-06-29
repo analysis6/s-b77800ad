@@ -1,0 +1,47 @@
+name: auto-expire
+# 到期自动下架：关闭 Pages + 清空内容与历史。跑在 GitHub 服务器上，无需本机在线。
+on:
+  schedule:
+    - cron: '7 * * * *'   # 每小时检查一次（UTC）
+  workflow_dispatch: {}    # 也支持手动触发
+permissions:
+  contents: write
+  pages: write
+jobs:
+  expire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Take down if expired
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          NOW=$(date -u +%Y%m%d%H%M)
+          DEADLINE=202607031600   # 2026-07-04 00:00 北京时间(=2026-07-03 16:00 UTC) 自动下架
+          if [ "$NOW" -lt "$DEADLINE" ]; then
+            echo "未到下架时间 ($NOW < $DEADLINE)，跳过。"
+            exit 0
+          fi
+          echo "已到下架时间，执行下架。"
+
+          # 1) 关闭 GitHub Pages，让网址停止访问（尽力而为，失败也继续）
+          gh api -X DELETE "repos/${GITHUB_REPOSITORY}/pages" || echo "Pages 关闭失败/已关闭，继续。"
+
+          # 2) 用单条干净提交覆盖整个仓库，连历史一起移除原始数据
+          git config user.name "auto-expire"
+          git config user.email "auto-expire@users.noreply.github.com"
+          cat > /tmp/down.html <<'HTML'
+          <!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>页面已下架</title>
+          <body style="font-family:system-ui,sans-serif;color:#555;text-align:center;padding:64px 20px">
+          <h1 style="font-weight:600">页面已过期</h1>
+          <p>此页面已自动下架，内容已移除。</p></body></html>
+          HTML
+          git checkout --orphan _clean
+          git rm -rf . >/dev/null 2>&1 || true
+          cp /tmp/down.html index.html
+          git add index.html
+          git commit -m "自动下架：内容已移除"
+          git branch -M main
+          git push -f origin main
+          echo "下架完成。"
